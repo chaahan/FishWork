@@ -14,6 +14,7 @@ class AquariumViewModel: ObservableObject {
 
         // 定期的に判定を更新
         timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
+            self.healthManager.fetchAllData()
             self.updateFishPresence()
         }
     }
@@ -42,6 +43,7 @@ class AquariumViewModel: ObservableObject {
     }
 
     func updateFishPresence() {
+        objectWillChange.send()
         let currentSteps = healthManager.currentSteps
         let average = healthManager.averageSteps
         let calendar = Calendar.current

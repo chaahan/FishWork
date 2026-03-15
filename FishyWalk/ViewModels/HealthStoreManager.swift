@@ -24,6 +24,11 @@ class HealthStoreManager: ObservableObject {
         }
     }
 
+    func fetchAllData() {
+        fetchCurrentSteps()
+        fetchHistory()
+    }
+
     func fetchCurrentSteps() {
         let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
         let now = Date()
@@ -33,6 +38,7 @@ class HealthStoreManager: ObservableObject {
         let query = HKStatisticsQuery(quantityType: stepType, quantitySamplePredicate: predicate, options: .cumulativeSum) { _, result, _ in
             guard let result = result, let sum = result.sumQuantity() else { return }
             DispatchQueue.main.async {
+                self.objectWillChange.send()
                 self.currentSteps = Int(sum.doubleValue(for: HKUnit.count()))
             }
         }
@@ -43,9 +49,11 @@ class HealthStoreManager: ObservableObject {
         let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
         let calendar = Calendar.current
         let now = Date()
-        let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: now))!
+        // 昨日の終わりまでの7日間を取得
+        let endOfYesterday = calendar.startOfDay(for: now)
+        let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: endOfYesterday)!
 
-        let predicate = HKQuery.predicateForSamples(withStart: sevenDaysAgo, end: now, options: .strictStartDate)
+        let predicate = HKQuery.predicateForSamples(withStart: sevenDaysAgo, end: endOfYesterday, options: .strictStartDate)
 
         var interval = DateComponents()
         interval.day = 1
@@ -58,7 +66,7 @@ class HealthStoreManager: ObservableObject {
             var total = 0
             var count = 0
 
-            results.enumerateStatistics(from: sevenDaysAgo, to: now) { statistics, _ in
+            results.enumerateStatistics(from: sevenDaysAgo, to: endOfYesterday) { statistics, _ in
                 let steps = Int(statistics.sumQuantity()?.doubleValue(for: HKUnit.count()) ?? 0)
                 history[statistics.startDate] = steps
                 total += steps
@@ -66,6 +74,7 @@ class HealthStoreManager: ObservableObject {
             }
 
             DispatchQueue.main.async {
+                self.objectWillChange.send()
                 self.dailyHistory = history
                 if count > 0 {
                     self.averageSteps = total / count
