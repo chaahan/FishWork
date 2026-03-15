@@ -10,8 +10,8 @@ iPadの「Swift Playgrounds」でこのアプリを動かすための手順で�
 以下のファイルを、Swift Playgrounds内の対応する場所にコピー＆ペーストしてください。
 （最初は `ContentView.swift` というファイルがあるはずなので、それを `AquariumView.swift` の内容で書き換えてもOKです）
 
-### ファイルリスト
-- **AquariumView.swift**: メイン画面と魚の表示
+### ファイルリスト（すべて同じ場所に並べてください）
+- **ContentView.swift**: メイン画面と魚の表示（元からある ContentView の中身を書き換えます）
 - **AquariumViewModel.swift**: 魚の出現・維持ロジック
 - **FishGoal.swift**: 魚と目標のデータ定義
 - **HealthStoreManager.swift**: ヘルスケア（歩数）データの取得

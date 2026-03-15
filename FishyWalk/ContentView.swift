@@ -66,6 +66,13 @@ struct AquariumView: View {
     }
 }
 
+// iPad Swift Playgrounds 用のエントリポイント
+struct ContentView: View {
+    var body: some View {
+        AquariumView()
+    }
+}
+
 struct FishView: View {
     let iconName: String
     let color: Color
