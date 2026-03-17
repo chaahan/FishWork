@@ -12,8 +12,12 @@ class AquariumViewModel: ObservableObject {
             setupInitialGoals()
         }
 
+        // 初回データ取得
+        healthManager.fetchAllData()
+        updateFishPresence()
+
         // 定期的に判定を更新
-        timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { _ in
             self.healthManager.fetchAllData()
             self.updateFishPresence()
         }
@@ -43,7 +47,9 @@ class AquariumViewModel: ObservableObject {
     }
 
     func updateFishPresence() {
+        // UI更新のために通知
         objectWillChange.send()
+
         let currentSteps = healthManager.currentSteps
         let average = healthManager.averageSteps
         let calendar = Calendar.current
@@ -66,12 +72,10 @@ class AquariumViewModel: ObservableObject {
                         case .dailySteps:
                             maintained = yesterdaySteps >= goal.maintenanceThreshold
                         case .relativeSteps:
-                            // 昨日の時点での平均を取得するのは難しいので、現在の平均で代用（簡易版）
                             maintained = yesterdaySteps >= (average + goal.maintenanceThreshold)
                         case .averageSteps:
                             maintained = average >= goal.maintenanceThreshold
                         case .continuousSteps:
-                            // 継続は「昨日目標達成したか」で判定
                             maintained = yesterdaySteps >= goal.maintenanceThreshold
                         }
 
@@ -102,7 +106,6 @@ class AquariumViewModel: ObservableObject {
                         goals[i].isPresent = true
                     }
                 case .continuousSteps:
-                    // 継続判定：直近N日分（今日を含む）がすべて閾値以上か
                     let isContinuous = checkContinuous(days: goal.requiredDays, threshold: goal.appearanceThreshold)
                     if isContinuous {
                         goals[i].isPresent = true
@@ -117,10 +120,8 @@ class AquariumViewModel: ObservableObject {
         let calendar = Calendar.current
         let now = Date()
 
-        // 今日が達成しているか
         if healthManager.currentSteps < threshold { return false }
 
-        // 過去 (days-1) 日分をチェック
         for i in 1..<days {
             let date = calendar.startOfDay(for: calendar.date(byAdding: .day, value: -i, to: now)!)
             let steps = healthManager.dailyHistory[date] ?? 0
@@ -129,5 +130,11 @@ class AquariumViewModel: ObservableObject {
             }
         }
         return true
+    }
+
+    // 手動で歩数を設定して魚の反応を確認する（テスト用）
+    func debugSetSteps(_ steps: Int) {
+        healthManager.setManualSteps(steps)
+        updateFishPresence()
     }
 }

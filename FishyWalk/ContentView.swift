@@ -3,14 +3,14 @@ import SwiftUI
 struct AquariumView: View {
     @StateObject var viewModel = AquariumViewModel()
     @State private var showGoalList = false
+    @State private var showDebug = false
 
     var body: some View {
         ZStack {
-            // 背景：水槽（青いグラデーションと砂・泡の演出）
+            // 背景：水槽
             ZStack {
                 LinearGradient(gradient: Gradient(colors: [Color(red: 0, green: 0.5, blue: 0.8), Color(red: 0, green: 0.2, blue: 0.5)]), startPoint: .top, endPoint: .bottom)
 
-                // 砂地
                 VStack {
                     Spacer()
                     Rectangle()
@@ -25,7 +25,7 @@ struct AquariumView: View {
                 FishView(iconName: goal.iconName, color: .orange)
             }
 
-            // 上部UI
+            // UI
             VStack {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
@@ -40,6 +40,10 @@ struct AquariumView: View {
                     .padding(.vertical, 10)
                     .background(Color.black.opacity(0.3))
                     .cornerRadius(20)
+                    .onTapGesture(count: 3) {
+                        // 3回タップでデバッグメニュー
+                        showDebug.toggle()
+                    }
 
                     Spacer()
 
@@ -54,19 +58,77 @@ struct AquariumView: View {
                 }
                 .padding()
 
+                if showDebug {
+                    DebugPanelView(viewModel: viewModel)
+                }
+
                 Spacer()
             }
         }
         .sheet(isPresented: $showGoalList) {
             GoalListView(viewModel: viewModel)
         }
-        .onAppear {
-            viewModel.updateFishPresence()
-        }
     }
 }
 
-// iPad Swift Playgrounds 用のエントリポイント
+struct DebugPanelView: View {
+    @ObservedObject var viewModel: AquariumViewModel
+    @State private var manualSteps: String = ""
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Text("🔧 診断・テストメニュー")
+                .font(.caption.bold())
+                .foregroundColor(.white)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("HealthKit利用可能: \(viewModel.healthManager.isHealthAvailable ? "YES" : "NO")")
+                Text("承認ステータス: \(viewModel.healthManager.authStatus)")
+                if !viewModel.healthManager.lastError.isEmpty {
+                    Text("エラー: \(viewModel.healthManager.lastError)")
+                        .foregroundColor(.red)
+                }
+            }
+            .font(.caption2)
+            .foregroundColor(.white)
+            .padding(8)
+            .background(Color.black.opacity(0.5))
+            .cornerRadius(8)
+
+            HStack {
+                TextField("歩数を入力", text: $manualSteps)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .keyboardType(.numberPad)
+                    .frame(width: 100)
+
+                Button("歩数を反映") {
+                    if let steps = Int(manualSteps) {
+                        viewModel.debugSetSteps(steps)
+                    }
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(5)
+            }
+
+            Button("HealthKit認証をリクエスト") {
+                viewModel.healthManager.requestAuthorization()
+            }
+            .font(.caption)
+            .padding(5)
+            .background(Color.green.opacity(0.7))
+            .foregroundColor(.white)
+            .cornerRadius(5)
+        }
+        .padding()
+        .background(Color.white.opacity(0.2))
+        .cornerRadius(15)
+        .padding(.horizontal)
+    }
+}
+
 struct ContentView: View {
     var body: some View {
         AquariumView()
